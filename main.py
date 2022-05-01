@@ -1,9 +1,24 @@
-from typing import Optional
+from typing import List, Optional
 from fastapi import FastAPI
 from DataModel import *
 from joblib import load
 import pandas as pd
+from DataModel2 import DataModel2
+from PreProcess import prepararDatos
+
+# Librerías para manejo de datos
+import pandas as pd
+pd.set_option('display.max_columns', 25) # Número máximo de columnas a mostrar
+pd.set_option('display.max_rows', 50) # Numero máximo de filas a mostar
 import numpy as np
+np.random.seed(3301)
+
+# Regresion lineal
+from sklearn.linear_model import LinearRegression
+
+# Metricas
+from sklearn.metrics import mean_squared_error as mse
+from sklearn.metrics import mean_squared_error, r2_score
 
 app = FastAPI()
 
@@ -19,35 +34,39 @@ def read_item(item_id: int, q: Optional[str] = None):
 
 @app.post("/predict")
 def make_predictions(dataModel: DataModel):
+    print(dataModel)
     df = pd.DataFrame(dataModel.dict(), columns=dataModel.dict().keys(), index=[0])
-#    df.columns = dataModel.columns()
+    df.columns = dataModel.columns()
+    print(df)
     data=prepararDatos(df)
-    model = load("assets/modelo.joblib")
+    model = load("assets/pipeline.joblib")
     result = model.predict(data)
+    print(model)
+    return result[0]
+
+@app.post("/compare")
+def make_predictions(dataModel: List[DataModel2]):
+    #print(dataModel)
+    data = pd.DataFrame(dataModel[0].dict(), columns=dataModel[0].dict().keys(), index=[0])
+    data.columns = dataModel[0].columns()
+    data = prepararDatos(data)
+    for i in range(1, len(dataModel)):
+      temp = dataModel[i]
+      temp_el = pd.DataFrame(temp.dict(), columns=temp.dict().keys(), index=[i]) 
+      temp_el.columns = temp.columns()
+      temp_el=prepararDatos(temp_el)
+      data = data.append(temp_el)
+    
+    model = load("assets/pipeline.joblib")
+    y_pred = model.predict(data)
+    print(y_pred)
+    y_true = data['Life expectancy'].to_numpy()
+    print(y_true)
+    result = r2_score(y_true, y_pred)
     print(result)
     return result
 
-def prepararDatos(data):
-   columnasAnalisis=['Life expectancy','Alcohol','Hepatitis B','BMI','under-five deaths',
-                  'Polio','Diphtheria','HIV/AIDS','thinness  10-19 years','Income composition of resources','Schooling']
-   data=data[columnasAnalisis]
-   # Se identifican las filas que tengan una esperanza de vida de 0 años, para luego quitarlas
-   data['Life expectancy'].replace({0:np.nan},inplace=True)
-  
-   # Se eliminan las filas que reporten más de 1000 muertes de menores de 5 años por cada 1000 habitantes
-   data.loc[ data['under-five deaths'] > 1000, 'under-five deaths' ] = np.nan
 
-    #Se convierten las muertes confirmadas por VIH/SIDA por cada 1000 nios nacidos 
-    #vivos en una variable binaria, que indica si hubo o casos reportados
-   data.loc[ data['HIV/AIDS'] <= 1, 'HIV/AIDS' ] = 0
-   data.loc[ data['HIV/AIDS'] > 1, 'HIV/AIDS' ] = 1
-
-    #Se eliminan las filas que tengan un valor nulo
-   data.dropna(inplace=True) 
-
-   X = data.drop('Life expectancy', axis = 1)
-   y = data['Life expectancy']
-   return X,y
 
 
 
