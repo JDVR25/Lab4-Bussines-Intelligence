@@ -14,15 +14,15 @@ def prepararDatos(data):
    # data['Life expectancy'].replace({0:np.nan},inplace=True)
   
    # Se eliminan las filas que reporten más de 1000 muertes de menores de 5 años por cada 1000 habitantes
-   # data.loc[ data['under_five_deaths'] > 1000, 'under_five_deaths' ] = np.nan
+   data.loc[ data['under-five deaths'] > 1000, 'under-five deaths' ] = np.nan
 
     #Se convierten las muertes confirmadas por VIH/SIDA por cada 1000 nios nacidos 
     #vivos en una variable binaria, que indica si hubo o casos reportados
-   # data.loc[ data['hiv_aids'] <= 1, 'hiv_aids' ] = 0
-   # data.loc[ data['hiv_aids'] > 1, 'hiv_aids' ] = 1
+   data.loc[ data['HIV/AIDS'] <= 1, 'HIV/AIDS' ] = 0
+   data.loc[ data['HIV/AIDS'] > 1, 'HIV/AIDS' ] = 1
 
     #Se eliminan las filas que tengan un valor nulo
-   # data.dropna(inplace=True)
+   data.dropna(inplace=True)
 
    #data['Alcohol']=data['alcohol']
    #data['Hepatitis B']=data['hepatitis_B']
